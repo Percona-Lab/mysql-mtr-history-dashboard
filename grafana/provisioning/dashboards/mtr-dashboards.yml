@@ -1,0 +1,14 @@
+apiVersion: 1
+providers:
+  - name: mtr-history
+    orgId: 1
+    folder: "MTR History"
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    options:
+      # Requires a bind-mount in compose.yml:
+      #   ./grafana/dashboards:/etc/grafana/dashboards/mtr-history:ro
+      path: /etc/grafana/dashboards/mtr-history
+      foldersFromFilesStructure: false

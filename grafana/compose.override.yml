@@ -1,0 +1,10 @@
+# Docker Compose override applied on the Hetzner observability host.
+# Merged with /opt/observability/compose.yml automatically by `docker compose`.
+#
+# Adds the bind mount that makes this repo's grafana/dashboards/ available to
+# the Grafana container at the path referenced by mtr-dashboards.yml
+# (/etc/grafana/dashboards/mtr-history).  Safe to commit; no secrets.
+services:
+  grafana:
+    volumes:
+      - /opt/observability/grafana/dashboards:/etc/grafana/dashboards/mtr-history:ro

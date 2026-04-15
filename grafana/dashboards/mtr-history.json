@@ -1,0 +1,419 @@
+{
+  "title": "MySQL MTR History",
+  "uid": "mtr-history",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "style": "dark",
+  "tags": ["mtr", "percona", "test-history"],
+  "liveNow": false,
+  "refresh": "",
+  "time": {"from": "now-30d", "to": "now"},
+  "timepicker": {"refresh_intervals": [], "time_options": ["30m", "2h", "6h", "24h", "7d", "30d", "90d", "180d"]},
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROM",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {"text": "Prometheus", "value": "PBFA97CFB590B2093"},
+        "hide": 0
+      },
+      {
+        "name": "platform_os",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+        "query": {"query": "label_values(mtr_build_info, platform_os)", "refId": "vPlatformOS"},
+        "includeAll": false,
+        "multi": true,
+        "refresh": 1,
+        "sort": 1,
+        "current": {"text": ["oraclelinux-10"], "value": ["oraclelinux-10"]},
+        "label": "OS"
+      },
+      {
+        "name": "platform_build",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+        "query": {"query": "label_values(mtr_build_info{platform_os=~\"$platform_os\"}, platform_build)", "refId": "vPlatformBuild"},
+        "includeAll": false,
+        "multi": true,
+        "refresh": 1,
+        "sort": 1,
+        "current": {"text": ["Debug"], "value": ["Debug"]},
+        "label": "Build"
+      },
+      {
+        "name": "arch",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+        "query": {"query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\"}, arch)", "refId": "vArch"},
+        "includeAll": false,
+        "multi": false,
+        "refresh": 1,
+        "sort": 1,
+        "current": {"text": "x86_64", "value": "x86_64"},
+        "label": "Arch"
+      },
+      {
+        "name": "branch",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+        "query": {"query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\", arch=\"$arch\"}, branch)", "refId": "vBranch"},
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "sort": 1,
+        "current": {"text": ["All"], "value": ["$__all"]},
+        "label": "Branch"
+      },
+      {
+        "name": "fork",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+        "query": {"query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\", arch=\"$arch\"}, fork)", "refId": "vFork"},
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "sort": 1,
+        "current": {"text": ["All"], "value": ["$__all"]},
+        "label": "Fork"
+      },
+      {
+        "name": "test_suite",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+        "query": {"query": "label_values(mtr_test_status{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\"}, suite)", "refId": "vSuite"},
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "sort": 1,
+        "current": {"text": ["All"], "value": ["$__all"]},
+        "label": "Suite"
+      },
+      {
+        "name": "show_only",
+        "type": "custom",
+        "query": "all, failures_only, flaky_only",
+        "options": [
+          {"text": "all", "value": "all", "selected": false},
+          {"text": "failures_only", "value": "failures_only", "selected": true},
+          {"text": "flaky_only", "value": "flaky_only", "selected": false}
+        ],
+        "current": {"text": "failures_only", "value": "failures_only"},
+        "label": "Show"
+      },
+      {
+        "name": "selected_test",
+        "type": "textbox",
+        "current": {"text": "audit_log/audit_log_charset", "value": "audit_log/audit_log_charset"},
+        "label": "Drill-down test (suite/name)"
+      }
+    ]
+  },
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Overview",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Builds in range",
+      "gridPos": {"h": 3, "w": 4, "x": 0, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "count(count by (build) (mtr_build_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"}))"
+      }],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "graphMode": "none", "textMode": "auto"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "fixed", "fixedColor": "blue"}, "mappings": []}}
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Pass rate",
+      "gridPos": {"h": 3, "w": 4, "x": 4, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "count(mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"} == 1) / count(mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"})"
+      }],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "graphMode": "none"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "mappings": [], "thresholds": {"mode": "absolute", "steps": [
+        {"color": "red", "value": null},
+        {"color": "yellow", "value": 0.9},
+        {"color": "green", "value": 0.98}
+      ]}}}
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Fail count (in range)",
+      "gridPos": {"h": 3, "w": 4, "x": 8, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "count(mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"} == 0)"
+      }],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "fixed", "fixedColor": "red"}}}
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Flaky tests",
+      "gridPos": {"h": 3, "w": 4, "x": 12, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "count(count by (suite, testname) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"} == 0) and count by (suite, testname) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"} == 1))"
+      }],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "fixed", "fixedColor": "orange"}}}
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Longest test p99",
+      "gridPos": {"h": 3, "w": 4, "x": 16, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "quantile(0.99, mtr_test_duration_seconds{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"})"
+      }],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}},
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "Unique tests",
+      "gridPos": {"h": 3, "w": 4, "x": 20, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "count(count by (suite, testname) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"}))"
+      }],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "fixed", "fixedColor": "blue"}}}
+    },
+    {
+      "id": 2,
+      "type": "row",
+      "title": "Hero matrix — tests × time",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 4},
+      "collapsed": false
+    },
+    {
+      "id": 20,
+      "type": "state-timeline",
+      "title": "Test results ($show_only, suite=$test_suite)",
+      "description": "Rows = tests, X = build timestamps. Green=pass, Red=fail, Grey=skip. Click a cell to open Jenkins.",
+      "gridPos": {"h": 18, "w": 24, "x": 0, "y": 5},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"} ${show_only:text}",
+        "legendFormat": "{{suite}}/{{testname}}"
+      }],
+      "options": {
+        "mergeValues": false,
+        "showValue": "never",
+        "alignValue": "left",
+        "rowHeight": 0.9,
+        "legend": {"displayMode": "hidden"},
+        "tooltip": {"mode": "single", "sort": "none"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"lineWidth": 0, "fillOpacity": 100},
+          "mappings": [
+            {"type": "value", "options": {"1": {"text": "PASS", "color": "#73BF69", "index": 0}}},
+            {"type": "value", "options": {"0": {"text": "FAIL", "color": "#F2495C", "index": 1}}},
+            {"type": "value", "options": {"2": {"text": "SKIP", "color": "#B0B0B0", "index": 2}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "transparent", "value": null}]},
+          "links": [
+            {"title": "Open Jenkins build", "url": "https://${__field.labels.instance}/job/${__field.labels.job_name}/${__field.labels.build}/", "targetBlank": true},
+            {"title": "Open testReport for this test", "url": "https://${__field.labels.instance}/job/${__field.labels.job_name}/${__field.labels.build}/testReport/${__field.labels.platform_os}.${__field.labels.platform_build}.${__field.labels.worker_slug}/${__field.labels.suite}/${__field.labels.testname}/", "targetBlank": true},
+            {"title": "Open worker mtr-test log", "url": "https://${__field.labels.instance}/job/${__field.labels.job_name}/${__field.labels.build}/artifact/work/mtr-test_${__field.labels.worker_num}.log", "targetBlank": true},
+            {"title": "Download test-output tarball", "url": "https://${__field.labels.instance}/job/${__field.labels.job_name}/${__field.labels.build}/artifact/work/results/ps80-test-mtr_logs-${__field.labels.worker_num}.tar.gz", "targetBlank": true},
+            {"title": "Drill down → load info box for this test", "url": "/d/${__dashboard.uid}/?var-selected_test=${__field.labels.suite}/${__field.labels.testname}&${__url_time_range}", "targetBlank": false}
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "row",
+      "title": "Info box — $selected_test across platforms",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23},
+      "collapsed": false
+    },
+    {
+      "id": 30,
+      "type": "state-timeline",
+      "title": "$selected_test per platform",
+      "description": "For the test set via `selected_test`, show per-platform pass/fail across the date range.",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "mtr_test_status{suite=~\".*\", testname=~\".*\", branch=~\"$branch\", fork=~\"$fork\"} * on(suite, testname) group_left() (label_replace(vector(1), \"suite\", \"${selected_test:regex}\", \"\", \"\") * 0 + 1)",
+        "legendFormat": "{{platform_os}}/{{platform_build}} WORKER_slug={{worker_slug}}"
+      }],
+      "options": {"mergeValues": false, "showValue": "never", "rowHeight": 0.9, "legend": {"displayMode": "list", "placement": "right"}},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"lineWidth": 0, "fillOpacity": 100},
+          "mappings": [
+            {"type": "value", "options": {"1": {"text": "PASS", "color": "#73BF69", "index": 0}}},
+            {"type": "value", "options": {"0": {"text": "FAIL", "color": "#F2495C", "index": 1}}},
+            {"type": "value", "options": {"2": {"text": "SKIP", "color": "#B0B0B0", "index": 2}}}
+          ]
+        }
+      }
+    },
+    {
+      "id": 31,
+      "type": "table",
+      "title": "$selected_test — builds in range",
+      "description": "One row per build for the selected test. Click a row's Jenkins link to open the testReport.",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+      "targets": [{
+        "refId": "A",
+        "expr": "mtr_test_status{branch=~\"$branch\", fork=~\"$fork\"}",
+        "format": "table",
+        "instant": false
+      }],
+      "transformations": [
+        {"id": "filterFieldsByName", "options": {"include": {"names": ["Time","build","platform_os","platform_build","arch","worker_slug","run_context","big","suite","testname","Value"]}}},
+        {"id": "filterByValue", "options": {"type": "include", "match": "all", "filters": [
+          {"fieldName": "suite",    "config": {"id": "regex", "options": "^" }},
+          {"fieldName": "testname", "config": {"id": "regex", "options": "^" }}
+        ]}},
+        {"id": "organize", "options": {"renameByName": {"Time": "Build date", "build": "Build #", "Value": "Status"}, "indexByName": {}}},
+        {"id": "sortBy", "options": {"fields": {}, "sort": [{"field": "Build date", "desc": true}]}}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"align": "left"},
+          "mappings": [
+            {"type": "value", "options": {"1": {"text": "✓ PASS", "color": "#73BF69"}}},
+            {"type": "value", "options": {"0": {"text": "✗ FAIL", "color": "#F2495C"}}},
+            {"type": "value", "options": {"2": {"text": "• SKIP", "color": "#B0B0B0"}}}
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Build #"},
+            "properties": [
+              {"id": "links", "value": [
+                {"title": "Open Jenkins build", "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__data.fields[\"Build #\"]}/", "targetBlank": true}
+              ]}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "type": "row",
+      "title": "Trends",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 32},
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 40,
+          "type": "timeseries",
+          "title": "Failures per build",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 33},
+          "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+          "targets": [{"refId": "A", "expr": "count by (build) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"} == 0)", "legendFormat": "{{build}}"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "red"}, "custom": {"drawStyle": "bars", "fillOpacity": 80}, "unit": "short"}}
+        },
+        {
+          "id": 41,
+          "type": "timeseries",
+          "title": "Pass / Fail / Skip stacked",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 33},
+          "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+          "targets": [
+            {"refId": "P", "expr": "count by (build) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"} == 1)", "legendFormat": "pass"},
+            {"refId": "F", "expr": "count by (build) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"} == 0)", "legendFormat": "fail"},
+            {"refId": "S", "expr": "count by (build) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"} == 2)", "legendFormat": "skip"}
+          ],
+          "fieldConfig": {"defaults": {"custom": {"drawStyle": "bars", "stacking": {"mode": "normal"}, "fillOpacity": 80}, "unit": "short"},
+            "overrides": [
+              {"matcher": {"id": "byName", "options": "pass"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "#73BF69"}}]},
+              {"matcher": {"id": "byName", "options": "fail"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "#F2495C"}}]},
+              {"matcher": {"id": "byName", "options": "skip"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "#B0B0B0"}}]}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "row",
+      "title": "Analysis",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 34},
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 50,
+          "type": "table",
+          "title": "Top-20 flakiest tests",
+          "gridPos": {"h": 10, "w": 12, "x": 0, "y": 35},
+          "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+          "targets": [{"refId": "A", "expr": "topk(20, count by (suite, testname) (mtr_test_status{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"} == 0))", "format": "table", "instant": true}],
+          "transformations": [
+            {"id": "organize", "options": {"renameByName": {"Value": "Fails"}}},
+            {"id": "sortBy", "options": {"fields": {}, "sort": [{"field": "Fails", "desc": true}]}}
+          ],
+          "fieldConfig": {"defaults": {"custom": {"align": "left"}},
+            "overrides": [{"matcher": {"id": "byName", "options": "Fails"}, "properties": [{"id": "custom.cellOptions", "value": {"type": "color-background"}}, {"id": "color", "value": {"mode": "continuous-YlOrRd"}}]}]
+          }
+        },
+        {
+          "id": 51,
+          "type": "table",
+          "title": "Build details",
+          "gridPos": {"h": 10, "w": 12, "x": 12, "y": 35},
+          "datasource": {"type": "prometheus", "uid": "${DS_PROM}"},
+          "targets": [{"refId": "A", "expr": "mtr_build_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"}", "format": "table", "instant": false}],
+          "transformations": [
+            {"id": "organize", "options": {"renameByName": {"Time": "When", "build": "Build #", "result": "Result", "cause_kind": "Trigger", "cause_user": "User", "branch": "Branch", "fork": "Fork"}, "excludeByName": {"Value": true, "__name__": true, "instance": true, "job_name": true, "arch": true, "platform_os": true, "platform_build": true, "build_url": false}}},
+            {"id": "sortBy", "options": {"fields": {}, "sort": [{"field": "When", "desc": true}]}}
+          ],
+          "fieldConfig": {"defaults": {"custom": {"align": "left"}},
+            "overrides": [
+              {"matcher": {"id": "byName", "options": "Build #"}, "properties": [{"id": "links", "value": [
+                {"title": "Open Jenkins", "url": "${__data.fields.build_url}", "targetBlank": true}
+              ]}]},
+              {"matcher": {"id": "byName", "options": "Result"}, "properties": [{"id": "mappings", "value": [
+                {"type": "value", "options": {"SUCCESS":  {"color": "#73BF69"}}},
+                {"type": "value", "options": {"UNSTABLE": {"color": "#FFCC02"}}},
+                {"type": "value", "options": {"FAILURE":  {"color": "#F2495C"}}},
+                {"type": "value", "options": {"ABORTED":  {"color": "#B0B0B0"}}}
+              ]}, {"id": "custom.cellOptions", "value": {"type": "color-text"}}]}
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# mtr-ingest — rsync merged.openmetrics.txt to the Hetzner observability host,
+# run promtool inside the Prometheus docker image, and reload Prometheus.
+#
+# Assumes:
+#   * SSH as root@162.55.36.239 is configured.
+#   * /opt/observability/ compose stack is running.
+#   * promtool/merged.openmetrics.txt exists locally.
+
+set -euo pipefail
+
+HOST="root@162.55.36.239"
+STAGE_DIR="/opt/observability/backfill"
+LOCAL_FILE="promtool/merged.openmetrics.txt"
+DRY_RUN=0
+
+usage() {
+    cat <<USAGE
+Usage: $0 [--host HOST] [--stage-dir DIR] [--file PATH] [--dry-run]
+
+  --host       SSH destination (default: $HOST)
+  --stage-dir  Directory on the host for the openmetrics file (default: $STAGE_DIR)
+  --file       Local path to merged openmetrics file (default: $LOCAL_FILE)
+  --dry-run    rsync --dry-run; skip promtool + reload
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --host)       HOST=$2;       shift 2 ;;
+        --stage-dir)  STAGE_DIR=$2;  shift 2 ;;
+        --file)       LOCAL_FILE=$2; shift 2 ;;
+        --dry-run)    DRY_RUN=1;     shift ;;
+        -h|--help)    usage; exit 0 ;;
+        *) echo "unknown arg: $1" >&2; usage; exit 2 ;;
+    esac
+done
+
+if [[ ! -s "$LOCAL_FILE" ]]; then
+    echo "error: $LOCAL_FILE missing or empty — run \`just build\` first" >&2
+    exit 1
+fi
+
+LINES=$(wc -l < "$LOCAL_FILE")
+SIZE=$(du -h "$LOCAL_FILE" | cut -f1)
+echo "→ uploading $LOCAL_FILE ($LINES lines, $SIZE) to $HOST:$STAGE_DIR/"
+
+if [[ $DRY_RUN -eq 1 ]]; then
+    ssh "$HOST" "mkdir -p $STAGE_DIR"
+    rsync -av --dry-run "$LOCAL_FILE" "$HOST:$STAGE_DIR/merged.openmetrics.txt"
+    echo
+    echo "[dry-run] would run on $HOST:"
+    echo "  docker compose -f /opt/observability/compose.yml run --rm \\"
+    echo "    -v $STAGE_DIR:/in \\"
+    echo "    -v observability_prom-data:/prometheus \\"
+    echo "    --entrypoint promtool prometheus \\"
+    echo "    tsdb create-blocks-from openmetrics /in/merged.openmetrics.txt /prometheus"
+    echo "  curl -X POST http://127.0.0.1:9090/-/reload"
+    exit 0
+fi
+
+ssh "$HOST" "mkdir -p $STAGE_DIR"
+rsync -av "$LOCAL_FILE" "$HOST:$STAGE_DIR/merged.openmetrics.txt"
+
+echo "→ running promtool on $HOST (this can take a while for 200 builds)"
+ssh "$HOST" "docker compose -f /opt/observability/compose.yml run --rm \
+    -v $STAGE_DIR:/in \
+    -v observability_prom-data:/prometheus \
+    --entrypoint promtool prometheus \
+    tsdb create-blocks-from openmetrics /in/merged.openmetrics.txt /prometheus"
+
+echo "→ reloading Prometheus"
+ssh "$HOST" "curl -sfS -X POST http://127.0.0.1:9090/-/reload"
+
+echo "→ verifying at least one mtr_build_info sample is queryable"
+ssh "$HOST" "curl -sf 'http://127.0.0.1:9090/api/v1/query?query=count(mtr_build_info)' | head -c 300"
+echo
+echo "✓ done"
