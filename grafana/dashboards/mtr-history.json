@@ -55,16 +55,17 @@
           "query": "label_values(mtr_build_info, platform_os)",
           "refId": "vPlatformOS"
         },
-        "includeAll": false,
+        "includeAll": true,
         "multi": true,
+        "allValue": ".*",
         "refresh": 1,
         "sort": 1,
         "current": {
           "text": [
-            "oraclelinux-10"
+            "All"
           ],
           "value": [
-            "oraclelinux-10"
+            "$__all"
           ]
         },
         "label": "OS"
@@ -80,16 +81,17 @@
           "query": "label_values(mtr_build_info{platform_os=~\"$platform_os\"}, platform_build)",
           "refId": "vPlatformBuild"
         },
-        "includeAll": false,
+        "includeAll": true,
         "multi": true,
+        "allValue": ".*",
         "refresh": 1,
         "sort": 1,
         "current": {
           "text": [
-            "Debug"
+            "All"
           ],
           "value": [
-            "Debug"
+            "$__all"
           ]
         },
         "label": "Build Type"
@@ -105,13 +107,18 @@
           "query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\"}, arch)",
           "refId": "vArch"
         },
-        "includeAll": false,
-        "multi": false,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
         "refresh": 1,
         "sort": 1,
         "current": {
-          "text": "x86_64",
-          "value": "x86_64"
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "label": "Arch"
       },
@@ -123,7 +130,7 @@
           "uid": "${DS_PROM}"
         },
         "query": {
-          "query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\", arch=\"$arch\"}, branch)",
+          "query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\", arch=~\"$arch\"}, branch)",
           "refId": "vBranch"
         },
         "includeAll": true,
@@ -149,7 +156,7 @@
           "uid": "${DS_PROM}"
         },
         "query": {
-          "query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\", arch=\"$arch\"}, fork)",
+          "query": "label_values(mtr_build_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\", arch=~\"$arch\"}, fork)",
           "refId": "vFork"
         },
         "includeAll": true,
@@ -232,7 +239,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[200d])",
+          "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=~\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[200d])",
           "instant": true,
           "range": false,
           "format": "table"
