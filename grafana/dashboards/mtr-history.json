@@ -16,7 +16,7 @@
   "liveNow": false,
   "refresh": "",
   "time": {
-    "from": "now-30d",
+    "from": "now-90d",
     "to": "now"
   },
   "timepicker": {
@@ -234,7 +234,8 @@
           "refId": "A",
           "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[200d])",
           "instant": true,
-          "range": false
+          "range": false,
+          "format": "table"
         }
       ],
       "options": {
