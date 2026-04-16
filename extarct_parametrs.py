@@ -18,6 +18,10 @@ def build_artifact_zip_url(job_base_url: str, build_number: int) -> str:
     return f"{job_base_url.rstrip('/')}/{build_number}/artifact/*zip*/archive.zip"
 
 
+def build_jenkins_build_url(job_base_url: str, build_number: int) -> str:
+    return f"{job_base_url.rstrip('/')}/{build_number}/"
+
+
 def curl_get(
     url: str, username: str | None = None, token: str | None = None, binary: bool = False
 ):
@@ -172,7 +176,26 @@ def extract_jenkins_parameters(payload: dict) -> dict:
 
     return params
 
-def get_or_download_artifact_zip(
+
+def get_build_result(payload: dict) -> str | None:
+    value = payload.get("result")
+    if isinstance(value, str):
+        return value.upper()
+    return None
+
+
+def debug_non_success_result(payload: dict, build_url: str) -> str:
+    result = payload.get("result")
+    building = payload.get("building")
+    in_progress = payload.get("inProgress")
+    return (
+        f"Build is not in allowed states (SUCCESS/UNSTABLE). "
+        f"result={result!r}, building={building}, "
+        f"inProgress={in_progress}, build_url={build_url}"
+    )
+
+
+def download_artifact_zip(
     artifact_zip_url: str,
     build_number: int,
     username: str | None = None,
@@ -190,6 +213,7 @@ def get_or_download_artifact_zip(
         )
 
     zip_bytes = curl_get(artifact_zip_url, username, token, binary=True)
+
     try:
         zip_path.write_bytes(zip_bytes)
     except OSError as e:
@@ -211,7 +235,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--job-base-url",
-        default="https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr",
+        default="https://ps80.cd.percona.com/job/percona-server-8.x-pipeline-parallel-mtr",
         help="Base Jenkins job URL without build number and without /api/json",
     )
     parser.add_argument(
@@ -227,18 +251,28 @@ def main() -> int:
     parser.add_argument(
         "-o",
         "--output",
-        help="Optional output file path (defaults to stdout)",
+        help="Optional output file path (default: <build_number>.json)",
         default=None,
     )
     args = parser.parse_args()
 
     jenkins_json_url = build_jenkins_url(args.job_base_url, args.build_number)
     artifact_zip_url = build_artifact_zip_url(args.job_base_url, args.build_number)
+    build_url = build_jenkins_build_url(args.job_base_url, args.build_number)
 
+    # 1) Check build status first and stop early unless SUCCESS or UNSTABLE.
     payload = fetch_json_from_url(jenkins_json_url, args.username, args.token)
+    build_result = get_build_result(payload)
+    allowed_results = {"SUCCESS", "UNSTABLE"}
+    if build_result not in allowed_results:
+        print(debug_non_success_result(payload, build_url), file=sys.stderr)
+        # Graceful failure: no output JSON generated when build is not allowed.
+        return 1
+
+    # 2) Only allowed builds continue to artifact processing/output generation.
     result = extract_jenkins_parameters(payload)
 
-    artifact_zip_path = get_or_download_artifact_zip(
+    artifact_zip_path = download_artifact_zip(
         artifact_zip_url,
         args.build_number,
         args.username,
@@ -247,18 +281,30 @@ def main() -> int:
     revision, mysql_version, failed_tests_json = extract_revision_from_artifact_zip(
         artifact_zip_path
     )
-    result["Revision"] = revision
-    result["MySQL_version"] = mysql_version
-    result.update(failed_tests_json)
 
-    output_text = json.dumps(result, indent=2, ensure_ascii=False)
+    # Keep these keys at the top of final JSON output.
+    final_result: dict[str, object] = {
+        "BUILD_NUMBER": args.build_number,
+        "BUILD_URL": build_url,
+        "BUILD_RESULT": build_result,
+        "REVISION": revision,
+        "MySQL_VERSION": mysql_version,
+    }
 
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
-            f.write(output_text + "\n")
-    else:
-        print(output_text)
+    # Preserve Jenkins parameter order after the top metadata keys.
+    for key, value in result.items():
+        if key not in final_result:
+            final_result[key] = value
 
+    final_result.update(failed_tests_json)
+
+    output_text = json.dumps(final_result, indent=2, ensure_ascii=False)
+
+    output_path = args.output or f"{args.build_number}.json"
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(output_text + "\n")
+
+    print(f"Wrote output JSON to {output_path}")
     return 0
 
 

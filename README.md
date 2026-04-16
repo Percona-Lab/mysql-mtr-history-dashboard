@@ -21,7 +21,7 @@ Usage examples:
 python3 extarct_parametrs.py --build-number 1559
 python3 extarct_parametrs.py --build-number 1559 --username YOUR_USER --token YOUR_TOKEN
 python3 extarct_parametrs.py --build-number 1559 -o params.json
-python3 extarct_parametrs.py --build-number 1559 --job-base-url https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr -o params.json
+python3 extarct_parametrs.py --build-number 1559 --job-base-url https://ps80.cd.percona.com/job/percona-server-8.x-pipeline-parallel-mtr -o params.json
 
 2. Extract Only Failed Testcases from JUnit XML
 Script: extract_failed_testsuites.py
