@@ -14,6 +14,9 @@ builds/xml/
 promtool/by-build/*.openmetrics.txt
 promtool/merged.openmetrics.txt
 
+# Secrets
+.env
+
 # IDE
 .idea/
 .vscode/
