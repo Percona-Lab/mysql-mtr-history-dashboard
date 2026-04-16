@@ -314,15 +314,15 @@
               "platform_os": true,
               "platform_build": true,
               "arch": true,
-              "fork": true
+              "fork": true,
+              "run_context": true,
+              "worker_num": true
             },
             "renameByName": {
               "suite": "Suite",
               "testname": "Test",
               "build_n": "Build",
-              "run_context": "Context",
               "worker_slug": "Worker",
-              "worker_num": "W#",
               "branch": "Branch",
               "failure_msg": "Error"
             },
@@ -330,11 +330,9 @@
               "build_n": 0,
               "suite": 1,
               "testname": 2,
-              "run_context": 3,
-              "worker_slug": 4,
-              "worker_num": 5,
-              "branch": 6,
-              "failure_msg": 7
+              "worker_slug": 3,
+              "branch": 4,
+              "failure_msg": 5
             }
           }
         },
