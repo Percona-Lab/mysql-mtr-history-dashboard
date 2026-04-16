@@ -80,12 +80,13 @@ _MIN_BUILD = {
 
 def test_iter_samples_counts() -> None:
     samples = list(iter_samples(_MIN_BUILD))
-    # 1 build_info + 3 build_summary_total + 3×(status+duration) = 10
-    assert len(samples) == 10
+    # 1 build_info + 3 build_summary_total + 3×(status+duration) + 1 failure_info = 11
+    assert len(samples) == 11
     metrics = {s.metric for s in samples}
     assert metrics == {
         "mtr_build_info",
         "mtr_build_summary_total",
+        "mtr_test_failure_info",
         "mtr_test_status",
         "mtr_test_duration_seconds",
     }
@@ -130,6 +131,20 @@ def test_iter_samples_labels_include_worker_slug_and_num() -> None:
     assert cifs.labels["run_context"] == "ci_fs"
 
 
+def test_iter_samples_failure_info() -> None:
+    samples = list(iter_samples(_MIN_BUILD))
+    fi = [s for s in samples if s.metric == "mtr_test_failure_info"]
+    # Only 1 test is failed (audit_log_charset), so exactly 1 failure_info sample.
+    assert len(fi) == 1
+    assert fi[0].labels["testname"] == "audit_log_charset"
+    assert fi[0].labels["failure_msg"] == "Test failed"
+    assert fi[0].value == 1.0
+    # Passing and skipped tests should NOT have failure_info.
+    names = {s.labels.get("testname") for s in fi}
+    assert "audit_log_filter" not in names
+    assert "innodb_bug60196" not in names
+
+
 def test_iter_samples_build_info() -> None:
     samples = list(iter_samples(_MIN_BUILD))
     info = next(s for s in samples if s.metric == "mtr_build_info")
@@ -145,11 +160,11 @@ def test_iter_samples_build_info() -> None:
 def test_write_openmetrics_roundtrip(tmp_path: Path) -> None:
     out = tmp_path / "b.openmetrics.txt"
     n = write_openmetrics(iter_samples(_MIN_BUILD), out)
-    assert n == 10
+    assert n == 11
     text = out.read_text()
     assert text.endswith("# EOF\n")
     # HELP + TYPE headers present for each metric family.
-    for metric in ("mtr_build_info", "mtr_build_summary_total", "mtr_test_status", "mtr_test_duration_seconds"):
+    for metric in ("mtr_build_info", "mtr_build_summary_total", "mtr_test_failure_info", "mtr_test_status", "mtr_test_duration_seconds"):
         assert f"# HELP {metric}" in text
         assert f"# TYPE {metric}" in text
     # Timestamp is the Jenkins build timestamp, not "now".
@@ -168,7 +183,7 @@ def test_merge_openmetrics_sorts_globally(tmp_path: Path) -> None:
 
     merged = tmp_path / "merged.txt"
     n = merge_openmetrics_files(a_dir, merged)
-    assert n == 20  # 10 samples × 2 builds
+    assert n == 22  # 11 samples × 2 builds
     lines = merged.read_text().splitlines()
     sample_lines = [l for l in lines if not l.startswith("#") and l]
     assert sample_lines == sorted(sample_lines)

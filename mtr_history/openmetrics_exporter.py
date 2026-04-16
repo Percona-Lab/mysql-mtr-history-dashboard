@@ -186,6 +186,11 @@ def iter_samples(build_json: dict) -> Iterator[Sample]:
         yield Sample("mtr_test_status", base, _STATUS_VALUE[t["status"]], ts)
         yield Sample("mtr_test_duration_seconds", base, float(t.get("time_s", 0.0)), ts)
 
+        # Failure info: only for failed tests, carries a truncated failure_msg label.
+        if t["status"] == "fail":
+            msg = (t.get("failure_message") or "")[:200].replace("\n", " ").strip()
+            yield Sample("mtr_test_failure_info", {**base, "failure_msg": msg}, 1.0, ts)
+
 
 # --- helpers for file output ------------------------------------------------
 
@@ -193,6 +198,7 @@ _METRIC_HELP: dict[str, tuple[str, str]] = {
     # (HELP text, TYPE)
     "mtr_build_info":            ("Jenkins MTR build metadata (labels only)", "gauge"),
     "mtr_build_summary_total":   ("MTR build test counts by status", "gauge"),
+    "mtr_test_failure_info":     ("Failed test with truncated failure message", "gauge"),
     "mtr_test_status":           ("Per-test result (1=PASS, 0=FAIL, 2=SKIP)", "gauge"),
     "mtr_test_duration_seconds": ("Per-test execution time in seconds", "gauge"),
 }

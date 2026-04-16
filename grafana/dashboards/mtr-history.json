@@ -300,7 +300,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(group by (build) (count_over_time(mtr_build_info{result=~\"UNSTABLE|FAILURE\",platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"}[$__range])))",
+          "expr": "count(group by (build) (count_over_time(mtr_build_info{result=~\"UNSTABLE|FAILURE|ABORTED\",platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\"}[$__range])))",
           "instant": true,
           "range": false
         }
@@ -622,6 +622,14 @@
           "format": "table",
           "instant": true,
           "range": false
+        },
+        {
+          "refId": "B",
+          "expr": "last_over_time(mtr_test_failure_info{build=\"$build\",suite=~\"$test_suite\"}[$__range])",
+          "instant": true,
+          "range": false,
+          "legendFormat": "",
+          "format": "table"
         }
       ],
       "transformations": [
@@ -641,7 +649,9 @@
               "platform_os": 5,
               "platform_build": 6,
               "build_n": 7,
-              "worker_num": 8
+              "worker_num": 8,
+              "branch": 9,
+              "failure_msg": 11
             },
             "renameByName": {
               "suite": "Suite",
@@ -650,7 +660,9 @@
               "worker_slug": "Worker",
               "platform_os": "OS",
               "platform_build": "Type",
-              "Value": "Status"
+              "Value": "Status",
+              "branch": "Branch",
+              "failure_msg": "Error"
             },
             "excludeByName": {
               "Time": true,
@@ -659,7 +671,6 @@
               "job_name": true,
               "build": true,
               "arch": true,
-              "branch": true,
               "fork": true,
               "big": true
             }
@@ -888,6 +899,24 @@
               {
                 "id": "custom.width",
                 "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Error"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
               }
             ]
           }
