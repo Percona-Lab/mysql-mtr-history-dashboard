@@ -602,11 +602,11 @@
     },
     {
       "id": 20,
-      "type": "table",
-      "title": "Build $build \u2014 failed tests (suite=$test_suite)",
-      "description": "Rows = tests in this build. Status cell colour-coded. Click Build # / Worker to open Jenkins; click testname to drill down in the info box below.",
+      "type": "state-timeline",
+      "title": "Failure matrix -- tests x builds",
+      "description": "Each row = a failing test. Red blocks = builds where it failed. Gaps = passed. Click to open Jenkins.",
       "gridPos": {
-        "h": 18,
+        "h": 20,
         "w": 24,
         "x": 0,
         "y": 5
@@ -615,177 +615,67 @@
         "type": "prometheus",
         "uid": "${DS_PROM}"
       },
+      "maxDataPoints": 5000,
+      "interval": "1h",
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time(mtr_test_failure_info{build=\"$build\",suite=~\"$test_suite\"}[$__range])",
-          "instant": true,
-          "range": false,
-          "legendFormat": "",
-          "format": "table"
+          "expr": "mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}",
+          "legendFormat": "{{suite}}/{{testname}} [{{worker_slug}}]",
+          "range": true,
+          "instant": false,
+          "interval": "1h"
         }
       ],
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true,
-              "instance": true,
-              "job_name": true,
-              "build": true,
-              "arch": true,
-              "fork": true,
-              "big": true,
-              "Value": true
-            },
-            "renameByName": {
-              "suite": "Suite",
-              "testname": "Test",
-              "run_context": "Context",
-              "worker_slug": "Worker",
-              "platform_os": "OS",
-              "platform_build": "Type",
-              "build_n": "Build",
-              "worker_num": "W#",
-              "branch": "Branch",
-              "failure_msg": "Error"
-            },
-            "indexByName": {
-              "suite": 0,
-              "testname": 1,
-              "run_context": 2,
-              "worker_slug": 3,
-              "platform_os": 4,
-              "platform_build": 5,
-              "build_n": 6,
-              "worker_num": 7,
-              "branch": 8,
-              "failure_msg": 9
-            }
-          }
+      "options": {
+        "mergeValues": false,
+        "showValue": "never",
+        "rowHeight": 0.85,
+        "alignValue": "center",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
         },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "Suite",
-                "desc": false
-              }
-            ]
-          }
+        "tooltip": {
+          "mode": "single",
+          "sort": "none",
+          "maxWidth": 500
         }
-      ],
+      },
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "align": "left",
-            "filterable": true
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Test"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 320
-              },
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open testReport in Jenkins",
-                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__data.fields.build_n}/testReport/${__data.fields.OS}.${__data.fields.Type}.${__data.fields.Worker}/${__data.fields.Suite}/${__value.raw}/",
-                    "targetBlank": true
-                  }
-                ]
-              }
-            ]
+            "lineWidth": 0,
+            "fillOpacity": 100
           },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Worker"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 150
-              },
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open worker mtr-test log (regular runs only)",
-                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__data.fields.build_n}/artifact/work/mtr-test_${__data.fields.worker_num}.log",
-                    "targetBlank": true
-                  },
-                  {
-                    "title": "Download worker test-output tarball",
-                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__data.fields.build_n}/artifact/work/results/ps80-test-mtr_logs-${__data.fields.worker_num}.tar.gz",
-                    "targetBlank": true
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "build_n"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Build"
-              },
-              {
-                "id": "custom.width",
-                "value": 70
-              },
-              {
-                "id": "custom.align",
-                "value": "center"
-              },
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open build in Jenkins",
-                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__value.raw}/",
-                    "targetBlank": true
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Error"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 300
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "auto"
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "FAIL",
+                  "color": "#E02F44",
+                  "index": 0
                 }
               }
-            ]
-          }
-        ]
-      }
+            }
+          ],
+          "links": [
+            {
+              "title": "Open testReport in Jenkins",
+              "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__field.labels.build_n}/testReport/${__field.labels.platform_os}.${__field.labels.platform_build}.${__field.labels.worker_slug}/${__field.labels.suite}/${__field.labels.testname}/",
+              "targetBlank": true
+            },
+            {
+              "title": "Open build #${__field.labels.build_n}",
+              "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__field.labels.build_n}/",
+              "targetBlank": true
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "transformations": []
     },
     {
       "id": 3,
