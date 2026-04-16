@@ -259,8 +259,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "Open testReport in Jenkins",
-                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__data.fields.Build}/testReport/${__data.fields.OS}.${__data.fields.Type}.${__data.fields.Worker}/${__data.fields.Suite}/${__value.raw}/",
+                    "title": "Open testReport for build ${__data.fields.Build}",
+                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__data.fields.Build}/testReport/",
                     "targetBlank": true
                   }
                 ]
@@ -311,7 +311,9 @@
               "build": true,
               "arch": true,
               "fork": true,
-              "Value": true
+              "Value": true,
+              "platform_os": true,
+              "platform_build": true
             },
             "renameByName": {
               "suite": "Suite",
@@ -319,8 +321,6 @@
               "build_n": "Build",
               "run_context": "Context",
               "worker_slug": "Worker",
-              "platform_os": "OS",
-              "platform_build": "Type",
               "worker_num": "W#",
               "branch": "Branch",
               "failure_msg": "Error"
@@ -331,11 +331,9 @@
               "testname": 2,
               "run_context": 3,
               "worker_slug": 4,
-              "platform_os": 5,
-              "platform_build": 6,
-              "worker_num": 7,
-              "branch": 8,
-              "failure_msg": 9
+              "worker_num": 5,
+              "branch": 6,
+              "failure_msg": 7
             }
           }
         },
