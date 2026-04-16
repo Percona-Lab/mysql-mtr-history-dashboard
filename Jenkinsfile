@@ -22,7 +22,7 @@ pipeline {
     stages {
         stage('Setup') {
             steps {
-                git url: 'https://github.com/Percona-Lab/mysql-mtr-history-dashboard.git',
+                git url: 'git@github.com:Percona-Lab/mysql-mtr-history-dashboard.git',
                     branch: 'main',
                     credentialsId: 'PS_PRIVATE_REPO_ACCESS'
                 sh '''

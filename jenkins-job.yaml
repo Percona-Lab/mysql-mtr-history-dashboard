@@ -13,7 +13,7 @@ build:
   concurrent: false
 scm:
   type: git
-  url: https://github.com/Percona-Lab/mysql-mtr-history-dashboard
+  url: git@github.com:Percona-Lab/mysql-mtr-history-dashboard.git
   branch: main
   credentials_id: PS_PRIVATE_REPO_ACCESS
   script_path: Jenkinsfile
