@@ -24,7 +24,7 @@ pipeline {
             steps {
                 git url: 'https://github.com/Percona-Lab/mysql-mtr-history-dashboard.git',
                     branch: 'main',
-                    credentialsId: 'GITHUB_API_TOKEN'
+                    credentialsId: 'PS_PRIVATE_REPO_ACCESS'
                 sh '''
                     curl -LsSf https://astral.sh/uv/install.sh | sh
                     export PATH="$HOME/.local/bin:$PATH"
