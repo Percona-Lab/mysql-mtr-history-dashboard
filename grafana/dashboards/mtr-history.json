@@ -232,10 +232,9 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[$__range])",
+          "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[200d])",
           "instant": true,
-          "range": false,
-          "format": "table"
+          "range": false
         }
       ],
       "options": {
