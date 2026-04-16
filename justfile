@@ -1,5 +1,6 @@
 # MTR history dashboard — common tasks.
-# Reqs: uv, just, `jenkins` Rust CLI on PATH, SSH to root@162.55.36.239 for ingest.
+# Reqs: uv, just, SSH to root@162.55.36.239 for ingest.
+# Stage A (fetch) needs either the `jenkins` Rust CLI or JENKINS_USER/JENKINS_TOKEN env vars.
 #
 # Usage: `just <task>` — run `just -l` for the full list.
 
@@ -7,8 +8,10 @@
 instance       := "ps80"
 job            := "percona-server-8.0-pipeline-parallel-mtr"
 job_path       := instance + "/" + job
+base_url       := "https://ps80.cd.percona.com"
 limit          := "200"
 workers        := "4"
+result_filter  := "UNSTABLE,FAILURE"
 hetzner_host   := "root@162.55.36.239"
 hetzner_stage  := "/opt/observability/backfill"
 
@@ -46,6 +49,14 @@ fetch-one build:
 status:
     uv run mtr-backfill status
 
+# Fetch last N builds via REST API (no Rust CLI needed). Filters by result.
+fetch-rest n=limit filter=result_filter:
+    uv run mtr-backfill fetch-rest --base-url {{base_url}} --job {{job}} --limit {{n}} --result-filter {{filter}} --workers {{workers}}
+
+# Re-fetch via REST API even if JSONs already exist.
+fetch-rest-force n=limit filter=result_filter:
+    uv run mtr-backfill fetch-rest --base-url {{base_url}} --job {{job}} --limit {{n}} --result-filter {{filter}} --workers {{workers}} --force
+
 # --- stage B: per-build JSON → OpenMetrics ---
 
 # Emit one openmetrics file per build JSON.
@@ -76,6 +87,22 @@ all n=limit:
     @just fetch {{n}}
     @just build
     @just ingest
+
+# Fetch (REST) → export → merge → ingest.  For environments without the Rust CLI.
+all-rest n=limit filter=result_filter:
+    @just fetch-rest {{n}} {{filter}}
+    @just build
+    @just ingest
+
+# --- jenkins job management ---
+
+# Create the mysql-mtr-history-dashboard job on ps80.
+create-job:
+    jenkins job -i ps80 create mysql-mtr-history-dashboard -c jenkins-job.yaml
+
+# Update the job config on ps80.
+update-job:
+    jenkins job -i ps80 update mysql-mtr-history-dashboard -c jenkins-job.yaml
 
 # --- tests ---
 

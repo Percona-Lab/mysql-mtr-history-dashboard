@@ -7,7 +7,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import jenkins_fetcher, junit_parser
+from . import jenkins_fetcher, jenkins_rest_fetcher, junit_parser
 from .schema import (
     SCHEMA_VERSION,
     BackfillMeta,
@@ -258,6 +258,88 @@ def process_build(
             schema_version=SCHEMA_VERSION,
             backfill_ts=_iso_now(),
             jenkins_cli_version=jenkins_fetcher.cli_version(),
+            junit_xml_files=sorted(p.name for p in xml_files),
+            warnings=warnings,
+            error=None,
+        ),
+    )
+
+    _write_build(out_path, build)
+
+    if not keep_xml:
+        shutil.rmtree(xml_dir, ignore_errors=True)
+
+    return out_path
+
+
+def process_build_rest(
+    base_url: str,
+    job: str,
+    build_number: int,
+    builds_dir: Path,
+    username: str | None = None,
+    token: str | None = None,
+    force: bool = False,
+    keep_xml: bool = False,
+    history_entry: dict | None = None,
+) -> Path | None:
+    """Like process_build() but uses the REST API fetcher instead of the Rust CLI."""
+    builds_dir.mkdir(parents=True, exist_ok=True)
+    # Derive instance from base_url for the filename.
+    instance = base_url.split("://", 1)[-1].split(".")[0] if "://" in base_url else "unknown"
+    out_path = builds_dir / _json_filename(instance, job, build_number)
+
+    if out_path.exists() and not force:
+        try:
+            existing = json.loads(out_path.read_text())
+            if existing.get("backfill_meta", {}).get("schema_version") == SCHEMA_VERSION:
+                return None
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    try:
+        detail = jenkins_rest_fetcher.fetch_detail(base_url, job, build_number, username, token)
+    except jenkins_rest_fetcher.JenkinsFetchError as e:
+        build = _tombstone(instance, job, build_number, f"fetch_detail failed: {e}", history_entry)
+        _write_build(out_path, build)
+        return out_path
+
+    xml_dir = builds_dir / "xml" / str(build_number)
+    try:
+        xml_files = jenkins_rest_fetcher.download_junit_xmls(
+            base_url, job, build_number, xml_dir, username, token,
+        )
+    except jenkins_rest_fetcher.JenkinsFetchError as e:
+        build = _tombstone(
+            instance, job, build_number,
+            f"download_junit_xmls failed: {e}", history_entry,
+        )
+        _write_build(out_path, build)
+        return out_path
+
+    if xml_files:
+        records, warnings = junit_parser.parse_all_junit_files(xml_dir)
+    else:
+        records, warnings = [], []
+
+    build = Build(
+        build_number=detail.get("build") or build_number,
+        url=detail.get("url") or f"{base_url.rstrip('/')}/job/{job}/{build_number}/",
+        timestamp=_iso_from_ms(detail.get("timestamp_ms")),
+        duration_ms=int(detail.get("duration_ms") or 0),
+        result=detail.get("result") or "UNKNOWN",
+        display_name=(detail.get("display_name") or "").strip() or f"#{build_number}",
+        platform=extract_platform(detail),
+        source=extract_source(detail),
+        cause=extract_cause(detail),
+        scm=extract_scm(detail),
+        parameters=extract_parameters(detail),
+        summary=summary_from_records(records),
+        tests=test_records_to_schema(records),
+        backfill_meta=BackfillMeta(
+            schema_version=SCHEMA_VERSION,
+            backfill_ts=_iso_now(),
+            jenkins_cli_version=jenkins_rest_fetcher.cli_version(),
             junit_xml_files=sorted(p.name for p in xml_files),
             warnings=warnings,
             error=None,

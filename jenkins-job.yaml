@@ -1,0 +1,45 @@
+name: mysql-mtr-history-dashboard
+description: |-
+  Fetch recent UNSTABLE/FAILURE builds from percona-server-8.0-pipeline-parallel-mtr,
+  parse JUnit XMLs, export OpenMetrics, and ingest into Prometheus for the
+  <a href="https://162.55.36.239:3000/d/mtr-history/mysql-mtr-history">MTR History Dashboard</a>.
+  <br><br>
+  Source: <a href="https://github.com/Percona-Lab/mysql-mtr-history-dashboard">Percona-Lab/mysql-mtr-history-dashboard</a>
+type: pipeline
+build:
+  discard:
+    days: null
+    num_to_keep: 50
+  concurrent: false
+scm:
+  type: git
+  url: https://github.com/Percona-Lab/mysql-mtr-history-dashboard
+  branch: main
+  credentials_id: null
+  script_path: Jenkinsfile
+parameters:
+- name: LIMIT
+  type: string
+  default: '20'
+  description: Number of recent builds to scan
+  choices: null
+  trim: false
+- name: RESULT_FILTER
+  type: string
+  default: UNSTABLE,FAILURE
+  description: Comma-separated build results to process
+  choices: null
+  trim: false
+- name: FORCE
+  type: boolean
+  default: 'false'
+  description: Re-process builds even if already ingested
+  choices: null
+  trim: false
+- name: DRY_RUN
+  type: boolean
+  default: 'false'
+  description: Generate OpenMetrics but do not ingest to Prometheus
+  choices: null
+  trim: false
+triggers: null

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -10,7 +11,7 @@ from pathlib import Path
 
 import click
 
-from . import build_to_json, jenkins_fetcher, openmetrics_exporter
+from . import build_to_json, jenkins_fetcher, jenkins_rest_fetcher, openmetrics_exporter
 from .schema import SCHEMA_VERSION
 
 
@@ -216,6 +217,115 @@ def rebuild(schema_version: int, builds_dir: Path, workers: int) -> None:
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(_do, tasks))
     click.echo("done")
+
+
+# --- fetch-rest (REST API, for Jenkins pipeline) ---------------------------
+
+@cli.command("fetch-rest")
+@click.option("--base-url", required=True, help="Jenkins base URL, e.g. https://ps80.cd.percona.com")
+@click.option("--job", required=True, help="Jenkins job name.")
+@click.option("--limit", default=20, show_default=True, help="How many recent builds to scan.")
+@click.option("--result-filter", default="UNSTABLE,FAILURE", show_default=True,
+              help="Comma-separated build results to process (e.g. UNSTABLE,FAILURE).")
+@click.option("--skip-builds", default=None,
+              help="Comma-separated build numbers to skip (already ingested).")
+@click.option("--workers", default=4, show_default=True, help="Parallel workers.")
+@click.option("--force", is_flag=True, help="Re-fetch even if JSON already exists.")
+@click.option("--keep-xml", is_flag=True, help="Keep junit XMLs under builds/xml/.")
+@click.option("--builds-dir", type=click.Path(path_type=Path), default=Path("builds"), show_default=True)
+def fetch_rest(
+    base_url: str,
+    job: str,
+    limit: int,
+    result_filter: str,
+    skip_builds: str | None,
+    workers: int,
+    force: bool,
+    keep_xml: bool,
+    builds_dir: Path,
+) -> None:
+    """Fetch builds via Jenkins REST API (no Rust CLI needed)."""
+    username = os.environ.get("JENKINS_USER")
+    token = os.environ.get("JENKINS_TOKEN")
+
+    click.echo(f"-> listing {limit} most-recent builds of {job} via REST API ...")
+    try:
+        history = jenkins_rest_fetcher.fetch_history(base_url, job, limit, username, token)
+    except jenkins_rest_fetcher.JenkinsFetchError as e:
+        click.echo(f"ERROR: {e}", err=True)
+        raise SystemExit(1)
+
+    allowed = {r.strip() for r in result_filter.split(",")} if result_filter else set()
+    if allowed:
+        before = len(history)
+        history = [e for e in history if e.get("result") in allowed]
+        click.echo(f"  found {before} builds, {len(history)} match result filter {allowed}")
+    else:
+        click.echo(f"  found {len(history)} builds")
+
+    # Skip builds already in Prometheus (idempotency across cleanWs runs).
+    if skip_builds and not force:
+        existing = {int(b.strip()) for b in skip_builds.split(",") if b.strip()}
+        if existing:
+            before = len(history)
+            history = [e for e in history if int(e["number"]) not in existing]
+            click.echo(f"  {before - len(history)} already ingested, {len(history)} new")
+
+    if not history:
+        click.echo("nothing to do")
+        return
+
+    processed = 0
+    skipped = 0
+    tombstoned = 0
+    errored = 0
+
+    def _do(entry: dict) -> tuple[int, str, str | None]:
+        n = int(entry["number"])
+        try:
+            out = build_to_json.process_build_rest(
+                base_url=base_url,
+                job=job,
+                build_number=n,
+                builds_dir=builds_dir,
+                username=username,
+                token=token,
+                force=force,
+                keep_xml=keep_xml,
+                history_entry=entry,
+            )
+        except Exception as e:  # noqa: BLE001
+            return n, "error", str(e)
+        if out is None:
+            return n, "skipped", None
+        try:
+            data = json.loads(out.read_text())
+            if data.get("result") == "FETCH_ERROR":
+                return n, "tombstone", data.get("backfill_meta", {}).get("error")
+        except Exception:  # noqa: BLE001
+            pass
+        return n, "processed", None
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futs = [pool.submit(_do, entry) for entry in history]
+        for fut in as_completed(futs):
+            n, status, err = fut.result()
+            if status == "processed":
+                processed += 1
+                click.echo(f"  + {n}")
+            elif status == "skipped":
+                skipped += 1
+            elif status == "tombstone":
+                tombstoned += 1
+                click.echo(f"  ! {n} tombstone: {err}")
+            else:
+                errored += 1
+                click.echo(f"  x {n} error: {err}", err=True)
+
+    click.echo(
+        f"\ndone -- processed={processed} skipped={skipped} "
+        f"tombstoned={tombstoned} errored={errored}"
+    )
 
 
 # --- export + merge ---------------------------------------------------------
