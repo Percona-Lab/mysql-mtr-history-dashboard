@@ -227,16 +227,16 @@
         "type": "prometheus",
         "uid": "${DS_PROM}"
       },
-      "maxDataPoints": 5000,
-      "interval": "1h",
+      "maxDataPoints": 500,
+      "interval": "1d",
       "targets": [
         {
           "refId": "A",
-          "expr": "mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}",
-          "legendFormat": "{{suite}}/{{testname}} [{{worker_slug}}]",
+          "expr": "count by (suite, testname) (last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[3d]))",
+          "legendFormat": "{{suite}}/{{testname}}",
           "range": true,
           "instant": false,
-          "interval": "1h",
+          "interval": "1d",
           "format": "time_series"
         }
       ],
@@ -263,9 +263,11 @@
           },
           "mappings": [
             {
-              "type": "value",
+              "type": "range",
               "options": {
-                "1": {
+                "from": 1,
+                "to": 999,
+                "result": {
                   "text": "FAIL",
                   "color": "#E02F44",
                   "index": 0
@@ -273,18 +275,7 @@
               }
             }
           ],
-          "links": [
-            {
-              "title": "Open testReport in Jenkins",
-              "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__field.labels.build_n}/testReport/${__field.labels.platform_os}.${__field.labels.platform_build}.${__field.labels.worker_slug}/${__field.labels.suite}/${__field.labels.testname}/",
-              "targetBlank": true
-            },
-            {
-              "title": "Open build #${__field.labels.build_n}",
-              "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__field.labels.build_n}/",
-              "targetBlank": true
-            }
-          ]
+          "links": []
         },
         "overrides": []
       },
