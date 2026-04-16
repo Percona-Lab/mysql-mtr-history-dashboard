@@ -15,7 +15,7 @@ scm:
   type: git
   url: https://github.com/Percona-Lab/mysql-mtr-history-dashboard
   branch: main
-  credentials_id: null
+  credentials_id: GITHUB_API_TOKEN
   script_path: Jenkinsfile
 parameters:
 - name: LIMIT
