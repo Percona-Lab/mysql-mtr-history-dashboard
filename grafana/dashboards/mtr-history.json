@@ -92,7 +92,7 @@
             "Debug"
           ]
         },
-        "label": "Build"
+        "label": "Build Type"
       },
       {
         "name": "arch",
