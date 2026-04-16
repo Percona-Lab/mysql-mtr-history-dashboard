@@ -214,7 +214,7 @@
     },
     {
       "id": 20,
-      "type": "state-timeline",
+      "type": "table",
       "title": "Failure matrix -- tests x builds",
       "description": "Each row = a failing test. Red blocks = builds where it failed. Gaps = passed. Click to open Jenkins.",
       "gridPos": {
@@ -227,59 +227,132 @@
         "type": "prometheus",
         "uid": "${DS_PROM}"
       },
-      "maxDataPoints": 500,
-      "interval": "1d",
+      "maxDataPoints": 200,
+      "interval": "3d",
       "targets": [
         {
           "refId": "A",
-          "expr": "count by (suite, testname) (last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[3d]))",
-          "legendFormat": "{{suite}}/{{testname}}",
-          "range": true,
-          "instant": false,
-          "interval": "1d",
-          "format": "time_series"
+          "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[$__range])",
+          "instant": true,
+          "range": false,
+          "format": "table"
         }
       ],
       "options": {
-        "mergeValues": false,
-        "showValue": "never",
-        "rowHeight": 0.85,
-        "alignValue": "center",
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none",
-          "maxWidth": 500
+        "showHeader": true,
+        "footer": {
+          "show": true,
+          "reducer": [
+            "count"
+          ]
         }
       },
       "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "lineWidth": 0,
-            "fillOpacity": 100
-          },
-          "mappings": [
-            {
-              "type": "range",
-              "options": {
-                "from": 1,
-                "to": 999,
-                "result": {
-                  "text": "FAIL",
-                  "color": "#E02F44",
-                  "index": 0
-                }
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Test"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open testReport in Jenkins",
+                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__data.fields.Build}/testReport/${__data.fields.OS}.${__data.fields.Type}.${__data.fields.Worker}/${__data.fields.Suite}/${__value.raw}/",
+                    "targetBlank": true
+                  }
+                ]
               }
-            }
-          ],
-          "links": []
-        },
-        "overrides": []
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Build"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open build in Jenkins",
+                    "url": "https://ps80.cd.percona.com/job/percona-server-8.0-pipeline-parallel-mtr/${__value.raw}/",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Error"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 400
+              }
+            ]
+          }
+        ]
       },
-      "transformations": []
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job_name": true,
+              "build": true,
+              "arch": true,
+              "fork": true,
+              "Value": true
+            },
+            "renameByName": {
+              "suite": "Suite",
+              "testname": "Test",
+              "build_n": "Build",
+              "run_context": "Context",
+              "worker_slug": "Worker",
+              "platform_os": "OS",
+              "platform_build": "Type",
+              "worker_num": "W#",
+              "branch": "Branch",
+              "failure_msg": "Error"
+            },
+            "indexByName": {
+              "build_n": 0,
+              "suite": 1,
+              "testname": 2,
+              "run_context": 3,
+              "worker_slug": 4,
+              "platform_os": 5,
+              "platform_build": 6,
+              "worker_num": 7,
+              "branch": 8,
+              "failure_msg": 9
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "Build",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "id": 4,
