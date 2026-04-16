@@ -36,12 +36,16 @@ pipeline {
 
         stage('Fetch') {
             steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'MTR_DASHBOARD_HETZNER_SSH',
-                    keyFileVariable: 'SSH_KEY',
-                    usernameVariable: 'SSH_USER')]) {
+                withCredentials([
+                    string(credentialsId: 'JNKPERCONA_PS80_TOKEN', variable: 'JENKINS_TOKEN'),
+                    sshUserPrivateKey(credentialsId: 'MTR_DASHBOARD_HETZNER_SSH',
+                                      keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
+                ]) {
                     sh """
                         export PATH="\$HOME/.local/bin:\$PATH"
+                        # JNKPERCONA_PS80_TOKEN stores "user:token" -- split it.
+                        export JENKINS_USER="\${JENKINS_TOKEN%%:*}"
+                        export JENKINS_TOKEN="\${JENKINS_TOKEN#*:}"
 
                         # Query Prometheus for already-ingested builds (idempotency).
                         SSH_OPTS="-i \${SSH_KEY} -o StrictHostKeyChecking=no"
