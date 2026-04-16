@@ -16,7 +16,9 @@ pipeline {
         HETZNER_HOST      = '162.55.36.239'
         HETZNER_STAGE     = '/opt/observability/backfill'
         TARGET_JOB        = 'percona-server-8.0-pipeline-parallel-mtr'
-        JOB_BASE_URL      = 'https://ps80.cd.percona.com'
+        // The agent runs ON ps80, so JENKINS_URL is auto-set.
+        // Use it for REST API calls (no external auth needed).
+        JOB_BASE_URL      = "${JENKINS_URL.replaceAll('/\$', '')}"
     }
 
     stages {
@@ -34,14 +36,12 @@ pipeline {
 
         stage('Fetch') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'JNKPERCONA_PS80_TOKEN', variable: 'JENKINS_TOKEN'),
-                    sshUserPrivateKey(credentialsId: 'MTR_DASHBOARD_HETZNER_SSH',
-                                      keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
-                ]) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'MTR_DASHBOARD_HETZNER_SSH',
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER')]) {
                     sh """
                         export PATH="\$HOME/.local/bin:\$PATH"
-                        export JENKINS_USER=JNKPercona
 
                         # Query Prometheus for already-ingested builds (idempotency).
                         SSH_OPTS="-i \${SSH_KEY} -o StrictHostKeyChecking=no"
@@ -102,7 +102,8 @@ pipeline {
 
                         echo "Verifying ingestion..."
                         ssh ${SSH_OPTS} ${HOST} \
-                            "curl -sf 'http://127.0.0.1:9090/api/v1/query?query=count(mtr_build_info)'"
+                            "curl -sf 'http://127.0.0.1:9090/api/v1/query' \
+                                --data-urlencode 'query=count(last_over_time(mtr_build_info[365d]))'"
                     '''
                 }
             }
@@ -110,6 +111,6 @@ pipeline {
     }
 
     post {
-        always { cleanWs() }
+        always { deleteDir() }
     }
 }
