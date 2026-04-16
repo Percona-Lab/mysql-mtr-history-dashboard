@@ -603,7 +603,7 @@
     {
       "id": 20,
       "type": "table",
-      "title": "Build $build \u2014 tests (filter: $show_only, suite=$test_suite)",
+      "title": "Build $build \u2014 failed tests (suite=$test_suite)",
       "description": "Rows = tests in this build. Status cell colour-coded. Click Build # / Worker to open Jenkins; click testname to drill down in the info box below.",
       "gridPos": {
         "h": 18,
@@ -618,13 +618,6 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time(mtr_test_status{build=\"$build\",suite=~\"$test_suite\"}[$__range]) $show_only",
-          "format": "table",
-          "instant": true,
-          "range": false
-        },
-        {
-          "refId": "B",
           "expr": "last_over_time(mtr_test_failure_info{build=\"$build\",suite=~\"$test_suite\"}[$__range])",
           "instant": true,
           "range": false,
@@ -634,36 +627,8 @@
       ],
       "transformations": [
         {
-          "id": "merge",
-          "options": {}
-        },
-        {
           "id": "organize",
           "options": {
-            "indexByName": {
-              "suite": 0,
-              "testname": 1,
-              "Value": 2,
-              "run_context": 3,
-              "worker_slug": 4,
-              "platform_os": 5,
-              "platform_build": 6,
-              "build_n": 7,
-              "worker_num": 8,
-              "branch": 9,
-              "failure_msg": 11
-            },
-            "renameByName": {
-              "suite": "Suite",
-              "testname": "Test",
-              "run_context": "Context",
-              "worker_slug": "Worker",
-              "platform_os": "OS",
-              "platform_build": "Type",
-              "Value": "Status",
-              "branch": "Branch",
-              "failure_msg": "Error"
-            },
             "excludeByName": {
               "Time": true,
               "__name__": true,
@@ -672,7 +637,32 @@
               "build": true,
               "arch": true,
               "fork": true,
-              "big": true
+              "big": true,
+              "Value": true
+            },
+            "renameByName": {
+              "suite": "Suite",
+              "testname": "Test",
+              "run_context": "Context",
+              "worker_slug": "Worker",
+              "platform_os": "OS",
+              "platform_build": "Type",
+              "build_n": "Build",
+              "worker_num": "W#",
+              "branch": "Branch",
+              "failure_msg": "Error"
+            },
+            "indexByName": {
+              "suite": 0,
+              "testname": 1,
+              "run_context": 2,
+              "worker_slug": 3,
+              "platform_os": 4,
+              "platform_build": 5,
+              "build_n": 6,
+              "worker_num": 7,
+              "branch": 8,
+              "failure_msg": 9
             }
           }
         },
@@ -682,15 +672,7 @@
             "fields": {},
             "sort": [
               {
-                "field": "Status",
-                "desc": false
-              },
-              {
                 "field": "Suite",
-                "desc": false
-              },
-              {
-                "field": "Test",
                 "desc": false
               }
             ]
@@ -702,59 +684,9 @@
           "custom": {
             "align": "left",
             "filterable": true
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "1": {
-                  "text": "\u2713 PASS",
-                  "color": "#56A64B",
-                  "index": 0
-                }
-              }
-            },
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "\u2717 FAIL",
-                  "color": "#E02F44",
-                  "index": 1
-                }
-              }
-            },
-            {
-              "type": "value",
-              "options": {
-                "2": {
-                  "text": "\u2205 SKIP",
-                  "color": "#7B7B7B",
-                  "index": 2
-                }
-              }
-            }
-          ]
+          }
         },
         "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Status"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "color-background-solid"
-                }
-              },
-              {
-                "id": "custom.width",
-                "value": 110
-              }
-            ]
-          },
           {
             "matcher": {
               "id": "byName",
@@ -774,18 +706,6 @@
                     "targetBlank": true
                   }
                 ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Suite"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 180
               }
             ]
           },
@@ -843,62 +763,6 @@
                     "targetBlank": true
                   }
                 ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "worker_num"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "W#"
-              },
-              {
-                "id": "custom.width",
-                "value": 50
-              },
-              {
-                "id": "custom.align",
-                "value": "center"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Context"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 110
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "OS"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 130
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Type"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 100
               }
             ]
           },
