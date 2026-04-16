@@ -199,6 +199,32 @@
           ]
         },
         "label": "Suite"
+      },
+      {
+        "name": "testname",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROM}"
+        },
+        "query": {
+          "query": "label_values(mtr_test_failure_info{platform_os=~\"$platform_os\", platform_build=~\"$platform_build\", arch=~\"$arch\", branch=~\"$branch\", fork=~\"$fork\", suite=~\"$test_suite\"}, testname)",
+          "refId": "vTestName"
+        },
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "sort": 1,
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "label": "Test"
       }
     ]
   },
@@ -239,7 +265,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=~\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\"}[200d])",
+          "expr": "last_over_time(mtr_test_failure_info{platform_os=~\"$platform_os\",platform_build=~\"$platform_build\",arch=~\"$arch\",branch=~\"$branch\",fork=~\"$fork\",suite=~\"$test_suite\",testname=~\"$testname\"}[200d])",
           "instant": true,
           "range": false,
           "format": "table"
