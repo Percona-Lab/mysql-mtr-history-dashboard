@@ -126,6 +126,8 @@ def iter_samples(build_json: dict) -> Iterator[Sample]:
     arch = plat["arch"]
     branch = src.get("branch") or ""
     fork = src.get("fork") or ""
+    # Unpadded build number for Jenkins URL templates (Jenkins uses /1558/, not /01558/).
+    build_n = str(build_json["build_number"])
 
     # --- build_info -----
     cause = build_json.get("cause") or {}
@@ -133,6 +135,7 @@ def iter_samples(build_json: dict) -> Iterator[Sample]:
         "instance": instance,
         "job_name": job_name,
         "build": build,
+        "build_n": build_n,
         "platform_os": platform_os,
         "platform_build": platform_build,
         "arch": arch,
@@ -152,6 +155,7 @@ def iter_samples(build_json: dict) -> Iterator[Sample]:
             "instance": instance,
             "job_name": job_name,
             "build": build,
+            "build_n": build_n,
             "platform_os": platform_os,
             "platform_build": platform_build,
             "arch": arch,
@@ -167,6 +171,7 @@ def iter_samples(build_json: dict) -> Iterator[Sample]:
             "instance": instance,
             "job_name": job_name,
             "build": build,
+            "build_n": build_n,
             "suite": t["suite"],
             "testname": t["name"],
             "platform_os": platform_os,

@@ -108,3 +108,10 @@ deploy-dashboard:
     rsync -av grafana/provisioning/dashboards/     {{hetzner_host}}:/opt/observability/grafana/provisioning/dashboards/
     rsync -av grafana/compose.override.yml         {{hetzner_host}}:/opt/observability/compose.override.yml
     ssh {{hetzner_host}} "cd /opt/observability && docker compose up -d grafana"
+
+# Fast iterative push: copy dashboard JSON only, relies on Grafana's file provisioner
+# (updateIntervalSeconds=30 in mtr-dashboards.yml) to pick up the change within 30s.
+push-dashboard:
+    @jq empty grafana/dashboards/mtr-history.json && echo "JSON valid"
+    rsync -a grafana/dashboards/ {{hetzner_host}}:/opt/observability/grafana/dashboards/
+    @echo "pushed; Grafana will reload within 30s"
