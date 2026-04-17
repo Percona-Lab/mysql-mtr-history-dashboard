@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTR History Dashboard - The Problem</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --accent-red: #f2495c;
+    --accent-green: #73bf69;
+    --accent-blue: #5c9df2;
+    --accent-orange: #ff9830;
+    --accent-purple: #b877d9;
+    --text-primary: #e8e8f0;
+    --text-muted: #8888a0;
+    --text-dim: #555570;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    position: relative;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(242,73,92,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(92,157,242,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--accent-blue));
+    z-index: 100;
+  }
+
+  .slide-number {
+    position: fixed;
+    bottom: 40px;
+    right: 60px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .content {
+    max-width: 1100px;
+    width: 100%;
+    z-index: 1;
+    animation: fadeUp 0.8s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent-blue);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    letter-spacing: -1.5px;
+  }
+
+  h1 .highlight {
+    background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 700px;
+    margin-bottom: 60px;
+  }
+
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 60px;
+  }
+
+  .pain-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 32px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pain-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(242,73,92,0.3);
+  }
+
+  .pain-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-red), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .pain-card:hover::after { opacity: 1; }
+
+  .pain-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 20px;
+    background: rgba(242,73,92,0.1);
+    color: var(--accent-red);
+  }
+
+  .pain-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+
+  .pain-card p {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .matrix-preview {
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 28px;
+    overflow: hidden;
+  }
+
+  .matrix-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .matrix-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .matrix-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .legend-dot.pass { background: var(--accent-green); }
+  .legend-dot.fail { background: var(--accent-red); }
+  .legend-dot.skip { background: #444460; }
+
+  .matrix-grid {
+    display: grid;
+    grid-template-columns: 180px repeat(20, 1fr);
+    gap: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  .matrix-label {
+    color: var(--text-muted);
+    padding: 6px 8px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .matrix-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    min-height: 22px;
+    animation: cellFade 0.3s ease-out backwards;
+  }
+
+  .matrix-cell.pass { background: var(--accent-green); opacity: 0.7; }
+  .matrix-cell.fail { background: var(--accent-red); opacity: 0.9; }
+  .matrix-cell.skip { background: #2a2a3e; }
+  .matrix-cell.empty { background: transparent; }
+
+  .matrix-cell.fail {
+    animation: cellPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes cellPulse {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 0.5; }
+  }
+
+  @keyframes cellFade {
+    from { opacity: 0; transform: scale(0.5); }
+  }
+
+  .question-mark {
+    position: absolute;
+    font-size: 200px;
+    font-weight: 900;
+    color: rgba(242,73,92,0.03);
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 40px;
+    left: 60px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .nav-next {
+    background: rgba(92,157,242,0.15);
+    color: var(--accent-blue);
+    border: 1px solid rgba(92,157,242,0.3);
+  }
+
+  .nav-next:hover {
+    background: rgba(92,157,242,0.25);
+    transform: translateX(4px);
+  }
+
+  @media (max-width: 900px) {
+    .slide { padding: 40px 30px; }
+    h1 { font-size: 40px; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .matrix-grid { grid-template-columns: 120px repeat(12, 1fr); }
+  }
+</style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <div class="slide-number">01 / 05</div>
+
+  <div class="slide">
+    <div class="question-mark">?</div>
+    <div class="content">
+      <div class="eyebrow">MySQL MTR History Dashboard</div>
+      <h1>Finding the needle in<br><span class="highlight">13,680 tests</span></h1>
+      <p class="subtitle">
+        Percona Server 8.0 runs thousands of MTR tests per build. When failures happen, engineers dig through JUnit XMLs manually. Patterns hide in noise. Flaky tests waste hours.
+      </p>
+
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </div>
+          <h3>No Historical View</h3>
+          <p>Each build is an island. No way to see if a failure is new, recurring, or a known flaky test without manual archaeology.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+          <h3>Slow Triage</h3>
+          <p>Engineers spend 30+ minutes per build navigating Jenkins testReport pages, downloading logs, and cross-referencing past runs.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h3>Hidden Patterns</h3>
+          <p>Flaky tests that fail intermittently across platforms go undetected. Regressions introduced by specific forks or branches stay invisible.</p>
+        </div>
+      </div>
+
+      <div class="matrix-preview">
+        <div class="matrix-header">
+          <span class="matrix-title">What 200+ builds of raw test data looks like</span>
+          <div class="matrix-legend">
+            <div class="legend-item"><div class="legend-dot pass"></div>pass</div>
+            <div class="legend-item"><div class="legend-dot fail"></div>fail</div>
+            <div class="legend-item"><div class="legend-dot skip"></div>skip</div>
+          </div>
+        </div>
+        <div class="matrix-grid" id="matrixGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="02-architecture.html" class="nav-next">
+      The Solution
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </nav>
+
+  <script>
+    const tests = [
+      'main.alter_table', 'binlog.binlog_row', 'innodb.blob_redo',
+      'rpl.rpl_multi_source', 'sys_vars.innodb_buf', 'main.dd_is_compat',
+      'auth_sec.openssl_cert', 'rocksdb.bloom_filter'
+    ];
+    const grid = document.getElementById('matrixGrid');
+    const statuses = ['pass','pass','pass','fail','skip','pass','pass'];
+
+    tests.forEach((test, row) => {
+      const label = document.createElement('div');
+      label.className = 'matrix-label';
+      label.textContent = test;
+      grid.appendChild(label);
+
+      for (let col = 0; col < 20; col++) {
+        const cell = document.createElement('div');
+        const rand = Math.random();
+        let status;
+        if (row === 3 || row === 5) {
+          status = rand < 0.15 ? 'fail' : rand < 0.25 ? 'skip' : 'pass';
+        } else if (row === 7) {
+          status = rand < 0.08 ? 'fail' : rand < 0.2 ? 'skip' : 'pass';
+        } else {
+          status = rand < 0.02 ? 'fail' : rand < 0.12 ? 'skip' : 'pass';
+        }
+        cell.className = `matrix-cell ${status}`;
+        cell.style.animationDelay = `${(row * 20 + col) * 15}ms`;
+        grid.appendChild(cell);
+      }
+    });
+  </script>
+</body>
+</html>

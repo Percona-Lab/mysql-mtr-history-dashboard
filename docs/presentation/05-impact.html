@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTR History Dashboard - Impact & Next Steps</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --accent-red: #f2495c;
+    --accent-green: #73bf69;
+    --accent-blue: #5c9df2;
+    --accent-orange: #ff9830;
+    --accent-purple: #b877d9;
+    --accent-cyan: #56d4e0;
+    --text-primary: #e8e8f0;
+    --text-muted: #8888a0;
+    --text-dim: #555570;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--accent-blue));
+    z-index: 100;
+  }
+
+  .slide-number {
+    position: fixed;
+    bottom: 40px;
+    right: 60px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    position: relative;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 50% 40% at 60% 30%, rgba(184,119,217,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 30% 70%, rgba(115,191,105,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .content {
+    max-width: 1100px;
+    width: 100%;
+    z-index: 1;
+    animation: fadeUp 0.8s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent-purple);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -1.5px;
+  }
+
+  h1 .highlight {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 650px;
+    margin-bottom: 52px;
+  }
+
+  .impact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-bottom: 52px;
+  }
+
+  .impact-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 36px;
+    display: flex;
+    gap: 20px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .impact-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .impact-card:nth-child(1):hover { border-color: rgba(115,191,105,0.4); }
+  .impact-card:nth-child(2):hover { border-color: rgba(92,157,242,0.4); }
+  .impact-card:nth-child(3):hover { border-color: rgba(255,152,48,0.4); }
+  .impact-card:nth-child(4):hover { border-color: rgba(184,119,217,0.4); }
+
+  .impact-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .impact-card:nth-child(1) .impact-icon { background: rgba(115,191,105,0.12); color: var(--accent-green); }
+  .impact-card:nth-child(2) .impact-icon { background: rgba(92,157,242,0.12); color: var(--accent-blue); }
+  .impact-card:nth-child(3) .impact-icon { background: rgba(255,152,48,0.12); color: var(--accent-orange); }
+  .impact-card:nth-child(4) .impact-icon { background: rgba(184,119,217,0.12); color: var(--accent-purple); }
+
+  .impact-text h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .impact-text p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .before-after {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 24px;
+    align-items: center;
+    margin-bottom: 52px;
+  }
+
+  .ba-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 32px;
+  }
+
+  .ba-card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  .ba-before h3 { color: var(--accent-red); }
+  .ba-after h3 { color: var(--accent-green); }
+
+  .ba-list {
+    list-style: none;
+  }
+
+  .ba-list li {
+    padding: 10px 0;
+    font-size: 15px;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    line-height: 1.5;
+  }
+
+  .ba-list li:last-child { border-bottom: none; }
+
+  .ba-list .icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .ba-before .icon { color: var(--accent-red); }
+  .ba-after .icon { color: var(--accent-green); }
+
+  .ba-arrow {
+    font-size: 28px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+  }
+
+  .roadmap {
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 36px;
+  }
+
+  .roadmap h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+
+  .roadmap-items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .roadmap-item {
+    position: relative;
+    padding-left: 20px;
+  }
+
+  .roadmap-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .roadmap-item:nth-child(1)::before { background: var(--accent-green); }
+  .roadmap-item:nth-child(2)::before { background: var(--accent-blue); }
+  .roadmap-item:nth-child(3)::before { background: var(--accent-purple); }
+
+  .roadmap-item h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .roadmap-item p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .roadmap-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+
+  .tag-ready { background: rgba(115,191,105,0.12); color: var(--accent-green); }
+  .tag-planned { background: rgba(92,157,242,0.12); color: var(--accent-blue); }
+  .tag-future { background: rgba(184,119,217,0.12); color: var(--accent-purple); }
+
+  .cta {
+    text-align: center;
+    margin-top: 52px;
+  }
+
+  .cta-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 36px;
+    background: linear-gradient(135deg, rgba(92,157,242,0.2), rgba(184,119,217,0.2));
+    border: 1px solid rgba(92,157,242,0.3);
+    border-radius: 12px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .cta-link:hover {
+    background: linear-gradient(135deg, rgba(92,157,242,0.3), rgba(184,119,217,0.3));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(92,157,242,0.15);
+  }
+
+  .cta-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 40px;
+    left: 60px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .nav-prev {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .nav-prev:hover { background: rgba(255,255,255,0.1); transform: translateX(-4px); }
+
+  .nav-start {
+    background: rgba(184,119,217,0.15);
+    color: var(--accent-purple);
+    border: 1px solid rgba(184,119,217,0.3);
+  }
+
+  .nav-start:hover { background: rgba(184,119,217,0.25); }
+
+  @media (max-width: 1000px) {
+    .slide { padding: 40px 30px; }
+    h1 { font-size: 36px; }
+    .impact-grid { grid-template-columns: 1fr; }
+    .before-after { grid-template-columns: 1fr; }
+    .ba-arrow { transform: rotate(90deg); justify-self: center; }
+    .roadmap-items { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <div class="slide-number">05 / 05</div>
+
+  <div class="slide">
+    <div class="content">
+      <div class="eyebrow">Impact & Next Steps</div>
+      <h1>From hours to <span class="highlight">seconds</span></h1>
+      <p class="subtitle">
+        What used to take 30+ minutes of manual Jenkins archaeology now takes a single glance at a dashboard.
+      </p>
+
+      <div class="before-after">
+        <div class="ba-card ba-before">
+          <h3>Before</h3>
+          <ul class="ba-list">
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+              Open each build page individually on Jenkins
+            </li>
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+              Navigate testReport trees, capped at 500 failures per suite
+            </li>
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+              No way to tell if a failure is new or recurring
+            </li>
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+              Flaky tests waste hours of investigation
+            </li>
+          </ul>
+        </div>
+
+        <div class="ba-arrow">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+
+        <div class="ba-card ba-after">
+          <h3>After</h3>
+          <ul class="ba-list">
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+              Single dashboard view of all tests across all builds
+            </li>
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+              Complete test counts from parsed JUnit XML (no caps)
+            </li>
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+              Instant pattern recognition: red streaks = regression
+            </li>
+            <li>
+              <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+              Flaky tests ranked automatically, filtered by platform
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="impact-grid">
+        <div class="impact-card">
+          <div class="impact-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="impact-text">
+            <h3>Faster Triage</h3>
+            <p>Engineers go from "which tests failed?" to "is this a known flaky?" in under 10 seconds. Deep links jump straight to Jenkins logs.</p>
+          </div>
+        </div>
+        <div class="impact-card">
+          <div class="impact-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <div class="impact-text">
+            <h3>Complete Data</h3>
+            <p>Jenkins caps test failures at 500 per suite. Our pipeline parses the raw JUnit XML directly, capturing all 13,680 tests per build.</p>
+          </div>
+        </div>
+        <div class="impact-card">
+          <div class="impact-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="impact-text">
+            <h3>Historical Trends</h3>
+            <p>180-day retention in Prometheus. See when a test started failing, which branch introduced it, and whether a fix actually stuck.</p>
+          </div>
+        </div>
+        <div class="impact-card">
+          <div class="impact-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="impact-text">
+            <h3>Idempotent & Safe</h3>
+            <p>Re-running the pipeline is always safe. Prometheus deduplicates on compaction. No manual state management needed.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap">
+        <h3>Roadmap</h3>
+        <div class="roadmap-items">
+          <div class="roadmap-item">
+            <h4>PS 8.4 MTR Support</h4>
+            <p>Same architecture, different job. One-line config addition to ingest 8.4 pipeline builds alongside 8.0.</p>
+            <span class="roadmap-tag tag-ready">Ready</span>
+          </div>
+          <div class="roadmap-item">
+            <h4>Post-Build Triggers</h4>
+            <p>Wire the pipeline as a Jenkins post-build action for real-time ingestion instead of batch backfill.</p>
+            <span class="roadmap-tag tag-planned">Planned</span>
+          </div>
+          <div class="roadmap-item">
+            <h4>Alerting</h4>
+            <p>Prometheus alerting rules for new failures, sustained regressions, and flaky test threshold breaches.</p>
+            <span class="roadmap-tag tag-future">Future</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta">
+        <a href="https://mtr-dashboard.cd.percona.com" class="cta-link" target="_blank">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open Live Dashboard
+        </a>
+        <div class="cta-sub">mtr-dashboard.cd.percona.com</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="04-dashboard.html" class="nav-prev">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <a href="01-problem.html" class="nav-start">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 12l7-7M3 12l7 7"/></svg>
+      Back to Start
+    </a>
+  </nav>
+</body>
+</html>

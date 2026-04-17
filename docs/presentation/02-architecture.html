@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTR History Dashboard - Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --accent-red: #f2495c;
+    --accent-green: #73bf69;
+    --accent-blue: #5c9df2;
+    --accent-orange: #ff9830;
+    --accent-purple: #b877d9;
+    --accent-cyan: #56d4e0;
+    --text-primary: #e8e8f0;
+    --text-muted: #8888a0;
+    --text-dim: #555570;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--accent-blue));
+    z-index: 100;
+  }
+
+  .slide-number {
+    position: fixed;
+    bottom: 40px;
+    right: 60px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    position: relative;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 50% 40% at 50% 30%, rgba(92,157,242,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 70% 70%, rgba(184,119,217,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .content {
+    max-width: 1200px;
+    width: 100%;
+    z-index: 1;
+    animation: fadeUp 0.8s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent-blue);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -1.5px;
+  }
+
+  h1 .highlight {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 650px;
+    margin-bottom: 56px;
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .stage {
+    flex: 1;
+    position: relative;
+    padding: 0 8px;
+  }
+
+  .stage-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 28px 24px;
+    height: 100%;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stage-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .stage:nth-child(1) .stage-card:hover { border-color: rgba(255,152,48,0.4); }
+  .stage:nth-child(2) .stage-card:hover { border-color: rgba(92,157,242,0.4); }
+  .stage:nth-child(3) .stage-card:hover { border-color: rgba(184,119,217,0.4); }
+  .stage:nth-child(4) .stage-card:hover { border-color: rgba(115,191,105,0.4); }
+
+  .stage-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 6px;
+    margin-bottom: 18px;
+  }
+
+  .stage:nth-child(1) .stage-badge { background: rgba(255,152,48,0.12); color: var(--accent-orange); }
+  .stage:nth-child(2) .stage-badge { background: rgba(92,157,242,0.12); color: var(--accent-blue); }
+  .stage:nth-child(3) .stage-badge { background: rgba(184,119,217,0.12); color: var(--accent-purple); }
+  .stage:nth-child(4) .stage-badge { background: rgba(115,191,105,0.12); color: var(--accent-green); }
+
+  .stage-card h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .stage-card p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .stage-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tech-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .arrow-connector {
+    position: absolute;
+    right: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .arrow-connector svg {
+    color: var(--text-dim);
+    animation: arrowPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes arrowPulse {
+    0%, 100% { opacity: 0.4; transform: translateX(0); }
+    50% { opacity: 0.8; transform: translateX(3px); }
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  .stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+
+  .stat-card:nth-child(1) .stat-value { color: var(--accent-orange); }
+  .stat-card:nth-child(2) .stat-value { color: var(--accent-blue); }
+  .stat-card:nth-child(3) .stat-value { color: var(--accent-purple); }
+  .stat-card:nth-child(4) .stat-value { color: var(--accent-green); }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 40px;
+    left: 60px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .nav-prev {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .nav-prev:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-4px);
+  }
+
+  .nav-next {
+    background: rgba(92,157,242,0.15);
+    color: var(--accent-blue);
+    border: 1px solid rgba(92,157,242,0.3);
+  }
+
+  .nav-next:hover {
+    background: rgba(92,157,242,0.25);
+    transform: translateX(4px);
+  }
+
+  @media (max-width: 1100px) {
+    .slide { padding: 40px 30px; }
+    h1 { font-size: 36px; }
+    .pipeline { flex-direction: column; gap: 16px; }
+    .stage { padding: 0; }
+    .arrow-connector { display: none; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <div class="slide-number">02 / 05</div>
+
+  <div class="slide">
+    <div class="content">
+      <div class="eyebrow">Architecture</div>
+      <h1>A <span class="highlight">three-stage pipeline</span><br>from builds to dashboards</h1>
+      <p class="subtitle">
+        Jenkins build data flows through a canonical JSON layer, gets exported as OpenMetrics, and lands in Prometheus for Grafana to visualize.
+      </p>
+
+      <div class="pipeline">
+        <div class="stage">
+          <div class="stage-card">
+            <div class="stage-badge">Stage A</div>
+            <h3>Collect</h3>
+            <p>Fetch build metadata and download 19 JUnit XML artifacts per build. Parse, merge duplicates, resolve test identity. Write one canonical JSON per build.</p>
+            <div class="stage-tech">
+              <span class="tech-tag">Jenkins REST API</span>
+              <span class="tech-tag">JUnit XML</span>
+              <span class="tech-tag">Pydantic v2</span>
+            </div>
+          </div>
+          <div class="arrow-connector">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-card">
+            <div class="stage-badge">Stage B</div>
+            <h3>Transform</h3>
+            <p>Convert per-build JSON to OpenMetrics text format. Generate 5 metric types with full label sets. Merge per-build files into a single sorted bundle.</p>
+            <div class="stage-tech">
+              <span class="tech-tag">OpenMetrics</span>
+              <span class="tech-tag">5 metrics</span>
+              <span class="tech-tag">170K samples</span>
+            </div>
+          </div>
+          <div class="arrow-connector">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-card">
+            <div class="stage-badge">Stage C</div>
+            <h3>Ingest</h3>
+            <p>Rsync the merged OpenMetrics file to the Hetzner host. Use promtool to create TSDB blocks directly, then reload Prometheus. Safe for re-runs.</p>
+            <div class="stage-tech">
+              <span class="tech-tag">promtool</span>
+              <span class="tech-tag">Prometheus TSDB</span>
+              <span class="tech-tag">SSH + rsync</span>
+            </div>
+          </div>
+          <div class="arrow-connector">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-card">
+            <div class="stage-badge">Visualize</div>
+            <h3>Dashboard</h3>
+            <p>Grafana failure matrix shows tests vs. builds. Clickable cells deep-link to Jenkins build pages, test reports, and worker logs. Filters by platform, branch, fork.</p>
+            <div class="stage-tech">
+              <span class="tech-tag">Grafana 11.6</span>
+              <span class="tech-tag">PromQL</span>
+              <span class="tech-tag">Caddy TLS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value">19</div>
+          <div class="stat-label">JUnit XMLs per build</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">21K</div>
+          <div class="stat-label">Test records per build</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Prometheus metrics</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">200+</div>
+          <div class="stat-label">Builds ingested</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="01-problem.html" class="nav-prev">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Problem
+    </a>
+    <a href="03-data-pipeline.html" class="nav-next">
+      Data Pipeline
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </nav>
+</body>
+</html>

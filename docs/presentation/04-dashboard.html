@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTR History Dashboard - The Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a2e;
+    --bg-grafana: #111217;
+    --accent-red: #f2495c;
+    --accent-green: #73bf69;
+    --accent-blue: #5c9df2;
+    --accent-orange: #ff9830;
+    --accent-purple: #b877d9;
+    --accent-cyan: #56d4e0;
+    --text-primary: #e8e8f0;
+    --text-muted: #8888a0;
+    --text-dim: #555570;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--accent-blue));
+    z-index: 100;
+  }
+
+  .slide-number {
+    position: fixed;
+    bottom: 40px;
+    right: 60px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    position: relative;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 20%, rgba(115,191,105,0.05) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 50% at 20% 80%, rgba(242,73,92,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .content {
+    max-width: 1200px;
+    width: 100%;
+    z-index: 1;
+    animation: fadeUp 0.8s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent-green);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -1.5px;
+  }
+
+  h1 .highlight {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 650px;
+    margin-bottom: 40px;
+  }
+
+  .dashboard-mock {
+    background: var(--bg-grafana);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .mock-toolbar {
+    background: #181b1f;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mock-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .grafana-logo {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #ff6b00, #f9b52c);
+    border-radius: 6px;
+  }
+
+  .mock-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .mock-filters {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mock-filter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+
+  .mock-body {
+    padding: 20px;
+  }
+
+  .mock-stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .mock-stat {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .mock-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .mock-stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .mock-panel-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .failure-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  .failure-matrix th {
+    padding: 6px 8px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-align: center;
+    font-size: 10px;
+  }
+
+  .failure-matrix th:first-child {
+    text-align: right;
+    min-width: 200px;
+  }
+
+  .failure-matrix td {
+    text-align: center;
+    padding: 0;
+  }
+
+  .failure-matrix td:first-child {
+    text-align: right;
+    padding: 6px 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .m-cell {
+    width: 100%;
+    height: 28px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+  }
+
+  .m-cell:hover {
+    transform: scale(1.15);
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+
+  .m-cell.pass { background: rgba(115,191,105,0.6); }
+  .m-cell.fail { background: rgba(242,73,92,0.8); }
+  .m-cell.skip { background: rgba(255,255,255,0.06); }
+  .m-cell.empty { background: transparent; }
+
+  .m-cell.fail::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(242,73,92,0.3);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 24px;
+    transition: transform 0.2s ease;
+  }
+
+  .feature-card:hover { transform: translateY(-2px); }
+
+  .feature-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .feature-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .feature-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .feature-dot.green { background: var(--accent-green); }
+  .feature-dot.blue { background: var(--accent-blue); }
+  .feature-dot.orange { background: var(--accent-orange); }
+
+  .tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #22222e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--text-primary);
+    z-index: 10;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+
+  .m-cell:hover .tooltip { display: block; }
+
+  .nav {
+    position: fixed;
+    bottom: 40px;
+    left: 60px;
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .nav-prev {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .nav-prev:hover { background: rgba(255,255,255,0.1); transform: translateX(-4px); }
+
+  .nav-next {
+    background: rgba(92,157,242,0.15);
+    color: var(--accent-blue);
+    border: 1px solid rgba(92,157,242,0.3);
+  }
+
+  .nav-next:hover { background: rgba(92,157,242,0.25); transform: translateX(4px); }
+
+  @media (max-width: 1000px) {
+    .slide { padding: 40px 30px; }
+    h1 { font-size: 34px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .mock-stats { grid-template-columns: repeat(3, 1fr); }
+    .mock-filters { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <div class="slide-number">04 / 05</div>
+
+  <div class="slide">
+    <div class="content">
+      <div class="eyebrow">Dashboard</div>
+      <h1>The <span class="highlight">failure matrix</span></h1>
+      <p class="subtitle">
+        A single Grafana panel shows every test across every build. Red cells are failures. Click any cell to jump directly to the Jenkins test report or build logs.
+      </p>
+
+      <div class="dashboard-mock">
+        <div class="mock-toolbar">
+          <div class="mock-toolbar-left">
+            <div class="grafana-logo"></div>
+            <span class="mock-title">MySQL MTR History</span>
+          </div>
+          <div class="mock-filters">
+            <span class="mock-filter">OS: oraclelinux-10</span>
+            <span class="mock-filter">Build: Debug</span>
+            <span class="mock-filter">Arch: x86_64</span>
+            <span class="mock-filter">Last 90 days</span>
+          </div>
+        </div>
+        <div class="mock-body">
+          <div class="mock-stats">
+            <div class="mock-stat">
+              <div class="mock-stat-value" style="color: var(--accent-blue);">127</div>
+              <div class="mock-stat-label">Builds in Range</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-value" style="color: var(--accent-green);">72.3%</div>
+              <div class="mock-stat-label">Pass Rate</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-value" style="color: var(--accent-red);">0.03%</div>
+              <div class="mock-stat-label">Fail Rate</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-value" style="color: var(--accent-orange);">18</div>
+              <div class="mock-stat-label">Flaky Tests</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-value" style="color: var(--accent-cyan);">13,680</div>
+              <div class="mock-stat-label">Unique Tests</div>
+            </div>
+          </div>
+
+          <div class="mock-panel-header">Failure Matrix &mdash; Tests x Builds (failures only)</div>
+
+          <table class="failure-matrix" id="failureMatrix">
+            <thead id="matrixHead"></thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <h4><span class="feature-dot green"></span> Deep Links</h4>
+          <p>Every cell links to the Jenkins build page, testReport URL, worker log file, and test output tarball. One click from pattern to root cause.</p>
+        </div>
+        <div class="feature-card">
+          <h4><span class="feature-dot blue"></span> Smart Filters</h4>
+          <p>Filter by OS, build type, architecture, branch, fork, and suite. "Failures only" mode keeps the matrix readable across 13,680 tests.</p>
+        </div>
+        <div class="feature-card">
+          <h4><span class="feature-dot orange"></span> Flaky Detection</h4>
+          <p>Tests that alternate between pass and fail across builds are surfaced automatically. Top-20 flakiest tests ranked by failure frequency.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="03-data-pipeline.html" class="nav-prev">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Data Pipeline
+    </a>
+    <a href="05-impact.html" class="nav-next">
+      Impact
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </nav>
+
+  <script>
+    const builds = ['#1559','#1558','#1557','#1556','#1555','#1554','#1553','#1552','#1551','#1550','#1549','#1548'];
+    const tests = [
+      { suite: 'auth_sec', name: 'openssl_cert_gen', flaky: true },
+      { suite: 'binlog', name: 'binlog_row_image', flaky: false },
+      { suite: 'innodb', name: 'blob_redo_8k', flaky: true },
+      { suite: 'main', name: 'alter_table_online', flaky: false },
+      { suite: 'main', name: 'dd_is_compatibility_ci', flaky: true },
+      { suite: 'rocksdb', name: 'bloom_filter_parts', flaky: false },
+      { suite: 'rpl', name: 'rpl_multi_source_mts', flaky: true },
+      { suite: 'sys_vars', name: 'innodb_buffer_pool', flaky: false },
+    ];
+
+    const head = document.getElementById('matrixHead');
+    const body = document.getElementById('matrixBody');
+
+    let headRow = '<tr><th>Test</th>';
+    builds.forEach(b => { headRow += `<th>${b}</th>`; });
+    headRow += '</tr>';
+    head.innerHTML = headRow;
+
+    tests.forEach(test => {
+      let row = `<td>${test.suite}/${test.name}</td>`;
+      builds.forEach((b, i) => {
+        let status;
+        if (test.flaky) {
+          const r = Math.random();
+          status = r < 0.2 ? 'fail' : r < 0.3 ? 'skip' : 'pass';
+        } else {
+          status = Math.random() < 0.03 ? 'fail' : 'pass';
+        }
+        const label = status === 'fail' ? 'FAIL' : status === 'skip' ? 'SKIP' : 'PASS';
+        row += `<td><div class="m-cell ${status}"><div class="tooltip">${test.suite}/${test.name}<br>Build ${b} &middot; ${label}</div></div></td>`;
+      });
+      body.innerHTML += `<tr>${row}</tr>`;
+    });
+  </script>
+</body>
+</html>
