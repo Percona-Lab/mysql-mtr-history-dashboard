@@ -328,6 +328,10 @@
               {
                 "id": "custom.width",
                 "value": 400
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
               }
             ]
           }
